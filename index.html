@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M1 · Controle operacional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9;--card:#fff;--line:#e6e9ee;--tx:#1b2433;--mut:#74808f;
+  --ac:#6b1226;--ac-soft:#f7ebee;--ok:#1a8f5a;--late:#d9902f;--open:#c3cfdd;--bad:#d1433f;--sla:#2f9140;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 48px}
+header{background:var(--card);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:14px;padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+.logo{width:38px;height:38px;border-radius:9px;background:var(--ac);color:#fff;font-weight:700;font-size:16px;display:grid;place-items:center}
+header h1{font-size:17px;margin:0;font-weight:600}
+header .sub{color:var(--mut);font-size:12.5px}
+.sp{flex:1}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--bg)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.pri:hover{background:#4f0d1c}
+
+/* barra de filtros */
+.fbar{position:sticky;top:0;z-index:30;background:rgba(246,247,249,.97);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);margin:0 -20px;padding:10px 20px 8px}
+.frow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.frow+.frow{margin-top:8px}
+.lbl{color:var(--mut);font-size:12px}
+select,input[type=date],input[type=search]{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 9px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--card)}
+.seg button{border:0;background:none;padding:5px 12px;cursor:pointer;font-weight:500;color:var(--mut)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--ac-soft);color:var(--ac)}
+.sl{position:relative}
+.slb{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;gap:6px;align-items:center;max-width:240px}
+.slb:hover{background:var(--bg)}
+.slb .t{color:var(--mut);font-size:12px;white-space:nowrap}
+.slb b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slb.on{border-color:var(--ac);background:var(--ac-soft)}
+.slb.on b{color:var(--ac)}
+.pop{position:absolute;top:calc(100% + 4px);left:0;width:290px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(20,30,50,.14);z-index:40;padding:8px}
+.pop .ps{width:100%;margin-bottom:6px}
+.pop .pl{max-height:260px;overflow:auto}
+.opt{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer}
+.opt:hover{background:var(--bg)}
+.opt .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opt .ct{color:var(--mut);font-size:12px}
+.pf{display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:20px;padding:2px 6px 2px 10px;font-size:12px;font-weight:600;background:var(--ac-soft);color:var(--ac);border:0;cursor:pointer}
+.chip:hover{background:#efd6dc}
+.chip.st-ok{background:#e3f4ec;color:var(--ok);padding:2px 10px;cursor:default}
+.chip.st-warn{background:#fbeccf;color:#a8690f;padding:2px 10px;cursor:default}
+.chip.st-bad{background:#fbe3e2;color:var(--bad);padding:2px 10px;cursor:default}
+.linkb{border:0;background:none;color:var(--ac);cursor:pointer;font-weight:600;padding:2px 6px}
+
+.banner{background:#fff6e5;border:1px solid #f1dcae;border-radius:8px;padding:8px 12px;margin:12px 0;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.card h2{font-size:14px;font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card h2 .hint{color:var(--mut);font-weight:400;font-size:12px}
+.grid{display:grid;gap:12px;margin-bottom:12px}
+.top{margin-top:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi .l{color:var(--mut);font-size:12.5px}
+.kpi .v{font-size:25px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
+.kpi .n{color:var(--mut);font-size:12px;margin-top:2px}
+.kpi.sla{grid-column:span 2;background:var(--ac-soft);border-color:#ecd3d9}
+.kpi.sla .v{font-size:38px;color:var(--ac)}
+.two{grid-template-columns:repeat(auto-fit,minmax(400px,1fr))}
+.three{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+svg text.ax{font-size:11px;fill:var(--mut)}
+svg line.gl{stroke:var(--line)}
+svg .hit{fill:transparent}
+svg .grp{cursor:pointer}
+svg .grp:hover .hit{fill:var(--ac-soft)}
+svg .grp.sel .hit{fill:var(--ac-soft)}
+svg .grp.dim{opacity:.35}
+.leg{display:flex;gap:14px;color:var(--mut);font-size:12px;font-weight:400;flex-wrap:wrap}
+.leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:500;font-size:12.5px;position:sticky;top:0;background:var(--card)}
+th[data-k]{cursor:pointer}
+th[data-k]:hover{color:var(--tx)}
+tbody tr:hover{background:#fafbfc}
+tr[data-dim],tr[data-per]{cursor:pointer}
+tr.sel{background:var(--ac-soft)!important}
+tr.dim{opacity:.45}
+.txl td{text-align:left}
+.slabar{display:inline-block;vertical-align:middle;width:56px;height:6px;border-radius:3px;background:var(--line);margin-right:8px;overflow:hidden}
+.slabar b{display:block;height:100%;background:var(--sla)}
+.scroll{max-height:380px;overflow:auto}
+.mut{color:var(--mut)}
+.hb{display:grid;grid-template-columns:minmax(80px,1.2fr) 1.4fr auto;gap:10px;align-items:center;padding:5px 6px;border-radius:6px;cursor:pointer}
+.hb:hover{background:var(--bg)}
+.hb.sel{background:var(--ac-soft)}
+.hb.dim{opacity:.45}
+.hb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tr{height:9px;border-radius:5px;background:var(--line);overflow:hidden}
+.hb .tr i{display:block;height:100%;background:var(--ac);border-radius:5px}
+.hb .vv{color:var(--mut);font-size:12px;white-space:nowrap;text-align:right}
+.hbl{max-height:290px;overflow:auto}
+.day{display:flex;gap:6px;align-items:center}
+.day .btn{padding:4px 10px}
+.prog{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line);margin:10px 0 8px}
+.prog span{display:block;height:100%}
+.mon{display:grid;grid-template-columns:1.6fr 1fr;gap:24px}
+@media(max-width:760px){.mon{grid-template-columns:1fr}.kpi.sla{grid-column:span 1}.two,.three{grid-template-columns:1fr}.fbar{position:static}}
+.big{font-size:32px;font-weight:700;letter-spacing:-.01em}
+.cuts div{display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px}
+.cuts div:hover{background:var(--bg)}
+.cuts div.sel{background:var(--ac-soft)}
+.cuts div.dim{opacity:.45}
+.empty{border:2px dashed var(--line);border-radius:var(--r);padding:56px 20px;text-align:center;background:var(--card)}
+.empty.drag{border-color:var(--ac);background:var(--ac-soft)}
+.empty h2{margin:0 0 6px;font-size:17px}
+.foot{color:var(--mut);font-size:12px;margin-top:6px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="logo">M1</div>
+  <div><h1>M1 · Controle operacional</h1><div class="sub" id="meta">Nenhum dado carregado</div></div>
+  <div class="sp"></div>
+  <button class="btn" id="bDemo">Ver exemplo</button>
+  <button class="btn pri" id="bLoad">Carregar dados</button>
+  <button class="btn" id="bClear" hidden>Limpar</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</div></header>
+
+<div class="wrap">
+  <div id="empty" class="empty" style="margin-top:24px" hidden>
+    <h2>Arraste o arquivo m1_dados.json aqui</h2>
+    <div class="mut">Gere o arquivo com o extrator_m1.py. Se ele estiver na mesma pasta da página, carrega sozinho.</div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="fbar">
+      <div class="frow">
+        <span class="lbl">Entrada no ponto</span>
+        <input type="date" id="de" aria-label="De"> <span class="lbl">até</span> <input type="date" id="ate" aria-label="Até">
+        <div class="seg" id="pre" role="group" aria-label="Atalhos de período">
+          <button data-p="all" aria-pressed="true">Tudo</button>
+          <button data-p="7" aria-pressed="false">7 dias</button>
+          <button data-p="30" aria-pressed="false">30 dias</button>
+          <button data-p="mes" aria-pressed="false">Mês atual</button>
+        </div>
+        <span class="sp"></span>
+        <div class="seg" id="view" role="group" aria-label="Visão">
+          <button data-v="D" aria-pressed="true">Diário</button>
+          <button data-v="S" aria-pressed="false">Semanal</button>
+          <button data-v="M" aria-pressed="false">Mensal</button>
+        </div>
+      </div>
+      <div class="frow" id="slicers"></div>
+      <div class="frow chips" id="chips"></div>
+    </div>
+
+    <div id="demo" class="banner" hidden>Você está vendo dados de exemplo.</div>
+
+    <div class="grid kpis top" id="kpis"></div>
+
+    <div class="grid two">
+      <div class="card"><h2>Volumetria <span class="hint">clique numa barra para filtrar</span><span class="sp"></span><span class="leg"><span><i style="background:var(--ac)"></i>Recebidos</span><span><i style="background:var(--open)"></i>Entregues</span></span></h2><div id="cBars"></div></div>
+      <div class="card"><h2>SLA <span id="slaH"></span> por período <span class="hint">dentro do prazo ÷ total</span></h2><div id="cLine"></div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <h2>Monitoramento do dia <span class="sp"></span>
+        <span class="day"><button class="btn" id="dPrev" aria-label="Dia anterior">Dia anterior</button><select id="dSel" aria-label="Dia"></select><button class="btn" id="dNext" aria-label="Próximo dia">Próximo dia</button></span>
+      </h2>
+      <div id="mon" class="mon"></div>
+    </div>
+
+    <div class="grid three" id="hbars"></div>
+
+    <div class="card" style="margin-bottom:12px"><h2>SLA por período <span class="hint">clique numa linha para filtrar</span></h2><div class="tw scroll"><table id="tPer"></table></div></div>
+    <div class="card" style="margin-bottom:12px"><h2>Entregadores <span class="hint">pacotes atribuídos · clique numa linha para filtrar</span></h2><div class="tw scroll"><table id="tMot"></table></div></div>
+    <div class="card">
+      <h2>Exceções: pendentes fora do prazo <span class="sp"></span>
+        <input type="search" id="q" placeholder="Buscar pedido, cliente ou entregador" aria-label="Buscar" style="min-width:260px">
+        <button class="btn" id="bCsv">Exportar CSV</button>
+      </h2>
+      <div class="tw scroll"><table id="tExc" class="txl"></table></div>
+      <div class="foot" id="excN"></div>
+    </div>
+    <p class="foot" id="rules"></p>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const enc = encodeURIComponent, dec = decodeURIComponent;
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const mkey = d => dkey(d).slice(0, 7);
+const iso = d => `${dkey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const fN = n => n.toLocaleString('pt-BR');
+const fP = v => v == null ? '—' : (v * 100).toFixed(1).replace('.', ',') + '%';
+const fDT = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const fD = k => k.split('-').reverse().join('/');
+function wkey(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const y = t.getUTCFullYear();
+  return `${y}-W${pad(Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7))}`;
+}
+
+const DIMS = [
+  {k: 'st',     l: 'Status do Pacote',       hb: true},
+  {k: 'cli',    l: 'Nome do Cliente',        hb: true},
+  {k: 'tag',    l: 'Tag',                    hb: true},
+  {k: 'ponto',  l: 'Ponto Responsável',      hb: true},
+  {k: 'motivo', l: 'Motivo da Ocorrência',   hb: true},
+  {k: 'cidade', l: 'Cidade do destinatário', hb: true},
+  {k: 'cep',    l: 'CEP do destinatário'},
+  {k: 'mot',    l: 'Entregador', vz: '(não atribuído)'},
+  {k: 'corte',  l: 'Corte'},
+];
+const VAZIO = '(vazio)';
+
+let META = null, ROWS = [], REF = null, MIND = null, MAXD = null, PRAZO = 36 * 36e5;
+let VIEW = 'D', SORT = {k: 'rec', d: -1}, DAY = null, DA = null, DB = null, AV = [];
+let EX = {}, UNI = {}, PSEL = new Set(), OPEN = null, EXC = [];
+
+/* ---------- carga de dados ---------- */
+function load(obj){
+  if (!obj || !Array.isArray(obj.cols) || !Array.isArray(obj.rows)) { alert('Arquivo inválido: use o m1_dados.json gerado pelo extrator.'); return; }
+  META = obj.meta || {};
+  PRAZO = (META.prazo_horas || 36) * 36e5;
+  REF = META.gerado_em ? new Date(META.gerado_em) : new Date();
+  AV = DIMS.filter(d => obj.cols.includes(d.k));
+  ROWS = obj.rows.map(a => {
+    const r = {}; obj.cols.forEach((c, i) => r[c] = a[i]);
+    r.rec = new Date(r.rec); r.ent = r.ent ? new Date(r.ent) : null;
+    r.prazo = new Date(+r.rec + PRAZO);
+    AV.forEach(d => { const v = r[d.k]; r[d.k] = (v == null || String(v).trim() === '') ? (d.vz || VAZIO) : String(v).trim(); });
+    r.kD = dkey(r.rec); r.kS = wkey(r.rec); r.kM = mkey(r.rec);
+    r.c = r.ent ? (r.ent <= r.prazo ? 'ok' : 'late') : (REF > r.prazo ? 'pl' : 'po');
+    return r;
+  }).filter(r => !isNaN(r.rec));
+  if (!ROWS.length) { alert('O arquivo não tem linhas.'); return; }
+  const ts = ROWS.map(r => +r.rec);
+  MIND = new Date(Math.min(...ts)); MIND.setHours(0,0,0,0);
+  MAXD = new Date(Math.max(...ts)); MAXD.setHours(0,0,0,0);
+  DAY = dkey(MAXD); EX = {}; UNI = {}; AV.forEach(d => { UNI[d.k] = [...new Set(ROWS.map(r => r[d.k]))]; }); PSEL = new Set(); OPEN = null; $('#q').value = '';
+  setPreset('all', true); buildSlicers(); buildHbars();
+  $('#empty').hidden = true; $('#app').hidden = false; $('#bClear').hidden = false;
+  $('#demo').hidden = !META.demo;
+  $('#slaH').textContent = `${PRAZO / 36e5}h`;
+  render();
+}
+function clearAll(){
+  ROWS = []; META = null;
+  $('#app').hidden = true; $('#bClear').hidden = true; $('#empty').hidden = false;
+  $('#meta').textContent = 'Nenhum dado carregado';
+}
+function demo(){
+  const cols = ['id','rec','ent','mot','st','cli','tag','ponto','motivo','cidade','cep','corte'];
+  const mots = ['Ana','Bruno','Carla','Diego','Elisa','Fábio'], clis = ['Shopee','Mercado Livre','Amazon','TikTok Shop'];
+  const tags = ['', '', 'Frágil', 'Expresso'], pts = ['SP-R-D158','SP-R-D159'], cids = ['São Paulo','Osasco','Guarulhos','Barueri'];
+  const mots2 = ['Cliente ausente','Endereço não localizado','Recusado'];
+  const ref = new Date(); ref.setMinutes(0,0,0); const rows = []; let n = 0;
+  for (let d = 29; d >= 0; d--) {
+    const b = new Date(ref); b.setDate(b.getDate() - d); b.setHours(0,0,0,0);
+    const cnt = 380 + Math.floor(Math.random() * 120);
+    for (let i = 0; i < cnt; i++) {
+      const rec = new Date(+b + (6 + Math.random() * 14) * 36e5); if (rec > ref) continue;
+      const r = Math.random(); let ent = null;
+      if (r < .9) { ent = new Date(+rec + (8 + Math.random() * (r < .8 ? 24 : 30)) * 36e5); if (ent > ref) ent = null; }
+      const cep = '0' + (1000 + Math.floor(Math.random() * 9)) + '-' + String(100 + Math.floor(Math.random() * 3) * 50).padStart(3, '0');
+      rows.push(['M1' + String(++n).padStart(6, '0'), iso(rec), ent ? iso(ent) : null, mots[i % 6],
+        ent ? 'Entregue' : (Math.random() < .5 ? 'Em rota' : 'Aguardando'), clis[(i * 7) % 4], tags[i % 4], pts[i % 5 === 0 ? 1 : 0],
+        ent ? '' : mots2[i % 3], cids[i % 4], cep, rec.getHours() >= 14 ? '2º Corte' : '1º Corte']);
+    }
+  }
+  load({meta: {base: 'M1', gerado_em: iso(ref), prazo_horas: 36, demo: true}, cols, rows});
+}
+
+/* ---------- filtros ---------- */
+const gk = r => r['k' + VIEW];
+function filtered(excl = []){
+  const act = AV.filter(d => EX[d.k] && EX[d.k].size && !excl.includes(d.k));
+  const per = PSEL.size && !excl.includes('per');
+  return ROWS.filter(r => r.rec >= DA && r.rec <= DB && (!per || PSEL.has(gk(r))) && act.every(d => !EX[d.k].has(r[d.k])));
+}
+/* EX[k] = valores DESMARCADOS. Sem entrada = todos marcados. */
+function toggleEx(k, v){
+  if (!EX[k]) EX[k] = new Set();
+  EX[k].has(v) ? EX[k].delete(v) : EX[k].add(v);
+  if (!EX[k].size) delete EX[k];
+}
+const incluidos = k => UNI[k].filter(v => !(EX[k] && EX[k].has(v)));
+/* clique em gráfico/tabela: isola o valor; clicar de novo no isolado volta a marcar todos; Ctrl/Shift soma ou tira */
+function pick(k, v, multi){
+  const inc = incluidos(k);
+  if (multi && EX[k]) { toggleEx(k, v); return; }
+  if (inc.length === 1 && inc[0] === v) { delete EX[k]; return; }
+  EX[k] = new Set(UNI[k].filter(x => x !== v));
+  if (!EX[k].size) delete EX[k];
+}
+function setVisible(k, marcar){
+  const q = $(`[data-sl="${k}"] .ps`).value.trim().toLowerCase();
+  const vals = UNI[k].filter(v => !q || v.toLowerCase().includes(q));
+  if (!EX[k]) EX[k] = new Set();
+  vals.forEach(v => marcar ? EX[k].delete(v) : EX[k].add(v));
+  if (!EX[k].size) delete EX[k];
+}
+
+function setPreset(p, silent){
+  let a = new Date(MIND), b = new Date(MAXD);
+  if (p === '7') { a = new Date(MAXD); a.setDate(a.getDate() - 6); }
+  else if (p === '30') { a = new Date(MAXD); a.setDate(a.getDate() - 29); }
+  else if (p === 'mes') a = new Date(MAXD.getFullYear(), MAXD.getMonth(), 1);
+  if (a < MIND) a = new Date(MIND);
+  setRange(a, b); markPreset(p);
+  if (!silent) render();
+}
+function setRange(a, b){
+  DA = new Date(a); DA.setHours(0,0,0,0); DB = new Date(b); DB.setHours(23,59,59,999);
+  $('#de').value = dkey(DA); $('#ate').value = dkey(DB);
+}
+const markPreset = p => document.querySelectorAll('#pre button').forEach(x => x.setAttribute('aria-pressed', x.dataset.p === p));
+
+function buildSlicers(){
+  $('#slicers').innerHTML = AV.map(d => `<div class="sl" data-sl="${d.k}"><button class="slb" type="button"><span class="t">${d.l}</span><b>Todos</b> <span class="t">▾</span></button>
+    <div class="pop" hidden><input type="search" class="ps" placeholder="Buscar em ${esc(d.l)}"><div class="pl"></div>
+    <div class="pf"><button class="linkb" type="button" data-all="${d.k}">Marcar todos</button><button class="linkb" type="button" data-none="${d.k}">Desmarcar todos</button></div></div></div>`).join('');
+}
+function popList(k){
+  const sl = $(`[data-sl="${k}"]`), q = sl.querySelector('.ps').value.trim().toLowerCase(), box = sl.querySelector('.pl'), top = box.scrollTop;
+  const cnt = new Map(UNI[k].map(v => [v, 0])); filtered([k]).forEach(r => cnt.set(r[k], (cnt.get(r[k]) || 0) + 1));
+  const ex = EX[k] || new Set();
+  let L = [...cnt].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  if (q) L = L.filter(([v]) => v.toLowerCase().includes(q));
+  const tot = L.length; L = L.slice(0, 300);
+  box.innerHTML = (L.map(([v, n]) => `<label class="opt"><input type="checkbox" data-val="${enc(v)}" ${ex.has(v) ? '' : 'checked'}><span class="nm" title="${esc(v)}">${esc(v)}</span><span class="ct">${fN(n)}</span></label>`).join('') ||
+    '<div class="mut" style="padding:6px">Nenhum resultado</div>') + (tot > 300 ? `<div class="mut" style="padding:6px;font-size:12px">Mostrando 300 de ${fN(tot)}. Use a busca.</div>` : '');
+  box.scrollTop = top;
+}
+function openPop(k){
+  closePop();
+  const sl = $(`[data-sl="${k}"]`), pop = sl.querySelector('.pop');
+  OPEN = k; pop.hidden = false; sl.querySelector('.ps').value = ''; popList(k);
+  pop.style.left = '0'; pop.style.right = 'auto';
+  if (pop.getBoundingClientRect().right > innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; }
+  sl.querySelector('.ps').focus();
+}
+function closePop(){ if (OPEN) { const p = $(`[data-sl="${OPEN}"] .pop`); if (p) p.hidden = true; } OPEN = null; }
+function slicerLabels(){
+  AV.forEach(d => {
+    const s = EX[d.k], b = $(`[data-sl="${d.k}"] .slb`); if (!b) return;
+    const inc = incluidos(d.k), tot = UNI[d.k].length;
+    b.classList.toggle('on', !!s);
+    b.querySelector('b').textContent = !s ? 'Todos' : !inc.length ? 'Nenhum' : inc.length === 1 ? inc[0] : `${inc.length} de ${tot}`;
+  });
+}
+function chips(){
+  const out = [];
+  AV.forEach(d => {
+    if (!EX[d.k]) return;
+    const inc = incluidos(d.k), tot = UNI[d.k].length;
+    const txt = !inc.length ? 'nenhum' : inc.length <= 2 ? inc.join(', ') : `${inc.length} de ${tot}`;
+    out.push(`<button class="chip" data-clr="${d.k}" title="Marcar todos de novo">${esc(d.l)}: ${esc(txt)} ✕</button>`);
+  });
+  if (PSEL.size) { const v = [...PSEL].sort(); out.push(`<button class="chip" data-clr="per" title="Remover filtro">Período: ${esc(v.slice(0, 3).map(perLabel).join(', '))}${v.length > 3 ? ` +${v.length - 3}` : ''} ✕</button>`); }
+  if (out.length) out.push('<button class="linkb" data-clr="all">Limpar tudo</button>');
+  $('#chips').innerHTML = out.join(''); $('#chips').hidden = !out.length;
+}
+function clearFilter(k){
+  if (k === 'all') { EX = {}; PSEL.clear(); }
+  else if (k === 'per') PSEL.clear();
+  else delete EX[k];
+  render();
+}
+
+/* ---------- cálculo ---------- */
+function agg(rs){
+  const a = {rec: rs.length, ent: 0, ok: 0, late: 0, pl: 0, po: 0};
+  for (const r of rs) { a[r.c]++; if (r.ent) a.ent++; }
+  a.pend = a.pl + a.po; a.fora = a.late + a.pl;
+  a.sla = a.rec ? a.ok / a.rec : null;
+  return a;
+}
+const perLabel = k => VIEW === 'D' ? fD(k).slice(0, 5) : VIEW === 'S' ? k.slice(5) : `${MES[+k.slice(5) - 1]}/${k.slice(2, 4)}`;
+function groups(rs){
+  const m = new Map();
+  rs.forEach(r => { const k = gk(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+  return [...m].sort((x, y) => x[0] < y[0] ? -1 : 1).map(([k, v]) => ({k, a: agg(v), label: perLabel(k)}));
+}
+
+/* ---------- desenho ---------- */
+function bars(g){
+  if (!g.length) return '<p class="mut">Sem dados para os filtros atuais.</p>';
+  const W = 560, H = 230, L = 42, B = 26, T = 8, n = g.length, bw = (W - L) / n;
+  const max = Math.max(1, ...g.map(x => x.a.rec)), h = v => (H - T - B) * v / max;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Recebidos e entregues por período">`;
+  for (let i = 0; i <= 4; i++) {
+    const y = T + (H - T - B) * (1 - i / 4);
+    s += `<line class="gl" x1="${L}" x2="${W}" y1="${y}" y2="${y}"/><text class="ax" x="${L - 6}" y="${y + 4}" text-anchor="end">${fN(Math.round(max * i / 4))}</text>`;
+  }
+  g.forEach((x, i) => {
+    const x0 = L + i * bw + bw * .12, w = bw * .76 / 2, sel = PSEL.has(x.k);
+    s += `<g class="grp ${sel ? 'sel' : PSEL.size ? 'dim' : ''}" data-per="${x.k}"><rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}"/>`;
+    s += `<rect x="${x0}" y="${H - B - h(x.a.rec)}" width="${w}" height="${h(x.a.rec)}" rx="2" fill="var(--ac)"><title>${x.label}: ${fN(x.a.rec)} recebidos</title></rect>`;
+    s += `<rect x="${x0 + w}" y="${H - B - h(x.a.ent)}" width="${w}" height="${h(x.a.ent)}" rx="2" fill="var(--open)"><title>${x.label}: ${fN(x.a.ent)} entregues</title></rect></g>`;
+    if (n <= 14 || i % Math.ceil(n / 12) === 0) s += `<text class="ax" x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${x.label}</text>`;
+  });
+  return s + '</svg>';
+}
+function line(g){
+  const pts = g.filter(x => x.a.sla != null);
+  if (!pts.length) return '<p class="mut">Sem dados para os filtros atuais.</p>';
+  const W = 560, H = 230, L = 42, B = 26, T = 8, n = g.length, bw = (W - L) / n;
+  const lo = Math.max(0, Math.floor(Math.min(...pts.map(x => x.a.sla)) * 20) / 20 - .05), y = v => T + (H - T - B) * (1 - (v - lo) / (1 - lo));
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="SLA por período">`;
+  for (let i = 0; i <= 4; i++) {
+    const v = lo + (1 - lo) * i / 4;
+    s += `<line class="gl" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${Math.round(v * 100)}%</text>`;
+  }
+  const xs = i => L + i * bw + bw / 2;
+  const P = g.map((x, i) => x.a.sla == null ? null : [xs(i), y(x.a.sla)]).filter(Boolean);
+  s += `<polygon fill="var(--sla)" opacity=".13" points="${P[0][0]},${H - B} ${P.map(q => q.join(',')).join(' ')} ${P[P.length - 1][0]},${H - B}"/>`;
+  s += `<polyline fill="none" stroke="var(--sla)" stroke-width="2.2" stroke-linejoin="round" points="${P.map(q => q.join(',')).join(' ')}"/>`;
+  g.forEach((x, i) => {
+    const sel = PSEL.has(x.k);
+    s += `<g class="grp ${sel ? 'sel' : PSEL.size ? 'dim' : ''}" data-per="${x.k}"><rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}"/>`;
+    if (x.a.sla != null) s += `<circle cx="${xs(i)}" cy="${y(x.a.sla)}" r="${sel ? 5.5 : 3.5}" fill="var(--sla)"><title>${x.label}: ${fP(x.a.sla)}</title></circle>`;
+    s += '</g>';
+    if (n <= 14 || i % Math.ceil(n / 12) === 0) s += `<text class="ax" x="${xs(i)}" y="${H - 8}" text-anchor="middle">${x.label}</text>`;
+  });
+  return s + '</svg>';
+}
+const slaCell = v => v == null ? '—' : `<span class="slabar"><b style="width:${v * 100}%"></b></span>${fP(v)}`;
+
+function kpis(A, rs){
+  const dias = new Set(rs.map(r => r.kD)).size || 1, hS = PRAZO / 36e5;
+  const k = (l, v, n = '', c = '') => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  $('#kpis').innerHTML =
+    k(`SLA ${hS}h`, fP(A.sla), `${fN(A.ok)} dentro do prazo de ${fN(A.rec)} pedidos`, 'sla') +
+    k('Recebidos', fN(A.rec), 'entrada no ponto') +
+    k('Entregues', fN(A.ent), fP(A.rec ? A.ent / A.rec : null) + ' dos recebidos') +
+    k('Dentro do prazo', fN(A.ok), `assinados em até ${hS}h`) +
+    k('Fora do prazo', fN(A.fora), `${fN(A.late)} entregues tarde · ${fN(A.pl)} pendentes vencidos`) +
+    k('Pendentes', fN(A.pend), `${fN(A.pl)} vencidos · ${fN(A.po)} ainda no prazo`) +
+    k('Média diária', fN(Math.round(A.rec / dias)), `${dias} dia(s) com recebimento`);
+}
+function tabPer(g){
+  $('#tPer').innerHTML = '<thead><tr><th>Período</th><th>Recebidos</th><th>Entregues</th><th>Dentro do prazo</th><th>Fora do prazo</th><th>Pendentes</th><th>SLA</th></tr></thead><tbody>' +
+    [...g].reverse().map(x => `<tr data-per="${x.k}" class="${PSEL.has(x.k) ? 'sel' : PSEL.size ? 'dim' : ''}"><td>${x.label}</td><td>${fN(x.a.rec)}</td><td>${fN(x.a.ent)}</td><td>${fN(x.a.ok)}</td><td>${fN(x.a.fora)}</td><td>${fN(x.a.pend)}</td><td>${slaCell(x.a.sla)}</td></tr>`).join('') + '</tbody>';
+}
+function tabMot(rs){
+  const m = new Map(); rs.forEach(r => { if (!m.has(r.mot)) m.set(r.mot, []); m.get(r.mot).push(r); });
+  const L = [...m].map(([mot, v]) => ({mot, ...agg(v)}));
+  const {k, d} = SORT; L.sort((x, y) => (typeof x[k] === 'string' ? x[k].localeCompare(y[k]) : (x[k] ?? -1) - (y[k] ?? -1)) * d);
+  const th = (key, t) => `<th data-k="${key}">${t}${SORT.k === key ? (SORT.d > 0 ? ' ▲' : ' ▼') : ''}</th>`;
+  const s = EX.mot;
+  $('#tMot').innerHTML = `<thead><tr>${th('mot','Entregador')}${th('rec','Atribuídos')}${th('ent','Entregues')}${th('ok','Dentro do prazo')}${th('fora','Fora do prazo')}${th('po','Pendentes no prazo')}${th('sla','SLA')}</tr></thead><tbody>` +
+    L.map(x => `<tr data-dim="mot" data-val="${enc(x.mot)}" class="${s ? (s.has(x.mot) ? 'dim' : 'sel') : ''}"><td>${esc(x.mot)}</td><td>${fN(x.rec)}</td><td>${fN(x.ent)}</td><td>${fN(x.ok)}</td><td>${fN(x.fora)}</td><td>${fN(x.po)}</td><td>${slaCell(x.sla)}</td></tr>`).join('') + '</tbody>';
+}
+function tabExc(rs){
+  const q = $('#q').value.trim().toLowerCase();
+  EXC = rs.filter(r => r.c === 'pl' && (!q || [r.id, r.mot, r.cli].join(' ').toLowerCase().includes(q))).sort((a, b) => a.prazo - b.prazo);
+  const has = k => AV.some(d => d.k === k);
+  $('#tExc').innerHTML = `<thead><tr><th>Pedido</th>${has('cli') ? '<th>Cliente</th>' : ''}${has('ponto') ? '<th>Ponto</th>' : ''}${has('mot') ? '<th>Entregador</th>' : ''}${has('st') ? '<th>Status</th>' : ''}<th>Recebido</th><th>Prazo</th><th>Atraso</th></tr></thead><tbody>` +
+    EXC.slice(0, 200).map(r => `<tr><td>${esc(r.id)}</td>${has('cli') ? `<td>${esc(r.cli)}</td>` : ''}${has('ponto') ? `<td>${esc(r.ponto)}</td>` : ''}${has('mot') ? `<td>${esc(r.mot)}</td>` : ''}${has('st') ? `<td>${esc(r.st)}</td>` : ''}<td>${fDT(r.rec)}</td><td>${fDT(r.prazo)}</td><td>${Math.round((REF - r.prazo) / 36e5)}h</td></tr>`).join('') + '</tbody>';
+  $('#excN').textContent = EXC.length > 200 ? `Mostrando 200 de ${fN(EXC.length)}. O CSV exporta todos.` : `${fN(EXC.length)} pedido(s).`;
+}
+function buildHbars(){
+  $('#hbars').innerHTML = AV.filter(d => d.hb).map(d => `<div class="card"><h2>${d.l} <span class="hint">volume · SLA</span></h2><div class="hbl" id="hb_${d.k}"></div></div>`).join('');
+}
+function hbars(){
+  AV.filter(d => d.hb).forEach(d => {
+    const m = new Map(); filtered([d.k]).forEach(r => { if (!m.has(r[d.k])) m.set(r[d.k], []); m.get(r[d.k]).push(r); });
+    const s = EX[d.k], L = [...m].map(([v, rs]) => ({v, a: agg(rs)})).sort((x, y) => y.a.rec - x.a.rec).slice(0, 200), max = L.length ? L[0].a.rec : 1;
+    $(`#hb_${d.k}`).innerHTML = L.map(x => `<div class="hb ${s ? (s.has(x.v) ? 'dim' : 'sel') : ''}" data-dim="${d.k}" data-val="${enc(x.v)}" title="${esc(x.v)}"><span class="nm">${esc(x.v)}</span><span class="tr"><i style="width:${x.a.rec / max * 100}%"></i></span><span class="vv">${fN(x.a.rec)} · ${fP(x.a.sla)}</span></div>`).join('') || '<p class="mut">Sem dados.</p>';
+  });
+}
+function monitor(rs0){
+  const days = [...new Set(rs0.map(r => r.kD))].sort();
+  if (!days.length) { $('#mon').innerHTML = '<p class="mut">Sem dados para os filtros atuais.</p>'; $('#dSel').innerHTML = ''; $('#dPrev').disabled = $('#dNext').disabled = true; return; }
+  if (!days.includes(DAY)) DAY = days[days.length - 1];
+  $('#dSel').innerHTML = days.slice().reverse().map(d => `<option value="${d}" ${d === DAY ? 'selected' : ''}>${fD(d)}</option>`).join('');
+  const i = days.indexOf(DAY); $('#dPrev').disabled = i <= 0; $('#dNext').disabled = i >= days.length - 1;
+  const rs = rs0.filter(r => r.kD === DAY), a = agg(rs), pr = rs.length ? a.ent / rs.length : 0;
+  const chip = !a.rec ? '' : a.pl ? `<span class="chip st-bad">${fN(a.pl)} pendentes vencidos</span>` : a.po ? '<span class="chip st-warn">Em andamento</span>' : '<span class="chip st-ok">Concluído</span>';
+  const seg = (v, c) => a.rec ? `<span style="width:${v / a.rec * 100}%;background:${c}" title="${fN(v)}"></span>` : '';
+  const sc = EX.corte;
+  const cuts = ['1º Corte', '2º Corte'].map(c => { const x = agg(rs.filter(r => r.corte === c)); return `<div class="${sc ? (sc.has(c) ? 'dim' : 'sel') : ''}" data-dim="corte" data-val="${enc(c)}"><span>${c}</span><span>${fN(x.rec)} recebidos · SLA ${fP(x.sla)}</span></div>`; }).join('');
+  $('#mon').innerHTML = `<div>
+      <div class="mut">Progresso de entrega</div><div class="big">${fP(a.rec ? pr : null)}</div>
+      <div class="prog">${seg(a.ok,'var(--ok)')}${seg(a.late,'var(--late)')}${seg(a.po,'var(--open)')}${seg(a.pl,'var(--bad)')}</div>
+      <div class="leg"><span><i style="background:var(--ok)"></i>Dentro do prazo ${fN(a.ok)}</span><span><i style="background:var(--late)"></i>Entregue tarde ${fN(a.late)}</span><span><i style="background:var(--open)"></i>Pendente no prazo ${fN(a.po)}</span><span><i style="background:var(--bad)"></i>Pendente vencido ${fN(a.pl)}</span></div>
+    </div>
+    <div><div style="margin-bottom:8px">${chip} <span class="mut">${fN(a.rec)} recebidos · SLA ${fP(a.sla)}</span></div><div class="cuts">${cuts}</div></div>`;
+}
+function render(){
+  if (!ROWS.length) return;
+  const base = filtered([]), noPer = filtered(['per']);
+  $('#meta').textContent = `Base ${META.base || 'M1'} · dados de ${fD(dkey(MIND))} a ${fD(dkey(MAXD))} · gerado em ${fDT(REF)} · ${fN(base.length)} de ${fN(ROWS.length)} pedidos nos filtros`;
+  kpis(agg(base), base);
+  const g = groups(noPer);
+  $('#cBars').innerHTML = bars(g); $('#cLine').innerHTML = line(g);
+  tabPer(g); monitor(noPer); hbars(); tabMot(filtered(['mot'])); tabExc(base);
+  chips(); slicerLabels(); if (OPEN) popList(OPEN);
+  $('#rules').textContent = `Prazo = entrada no ponto + ${PRAZO / 36e5}h. Dentro do prazo = pedido assinado até o prazo. SLA = dentro do prazo ÷ total de pedidos (inclui pendentes). Pendente = pedido sem assinatura, medido até ${fDT(REF)}. Filtros: tudo vem marcado e desmarcar tira do resultado. Clique em barras, linhas e tabelas para isolar um valor (clique de novo para voltar; Ctrl ou Shift soma ou tira valores).`;
+}
+
+/* ---------- eventos ---------- */
+$('#bLoad').onclick = () => $('#file').click();
+$('#bClear').onclick = clearAll;
+$('#bDemo').onclick = demo;
+$('#file').onchange = e => { const f = e.target.files[0]; if (f) readFile(f); e.target.value = ''; };
+function readFile(f){
+  const rd = new FileReader();
+  rd.onload = () => { try { load(JSON.parse(rd.result)); } catch (err) { alert('Não consegui ler o arquivo: ' + err.message); } };
+  rd.readAsText(f);
+}
+['dragover', 'dragenter'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); $('#empty').classList.add('drag'); }));
+['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); $('#empty').classList.remove('drag'); }));
+document.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+
+$('#pre').onclick = e => { const b = e.target.closest('button'); if (b) setPreset(b.dataset.p); };
+$('#de').onchange = $('#ate').onchange = () => {
+  const a = $('#de').value ? new Date($('#de').value + 'T00:00') : MIND, b = $('#ate').value ? new Date($('#ate').value + 'T00:00') : MAXD;
+  setRange(a, b < a ? a : b); markPreset(''); render();
+};
+$('#view').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return; VIEW = b.dataset.v; PSEL.clear();
+  document.querySelectorAll('#view button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  render();
+};
+$('#q').oninput = () => tabExc(filtered([]));
+
+/* slicers */
+$('#slicers').addEventListener('click', e => {
+  const all = e.target.closest('[data-all]'); if (all) { setVisible(all.dataset.all, true); render(); return; }
+  const none = e.target.closest('[data-none]'); if (none) { setVisible(none.dataset.none, false); render(); return; }
+  const b = e.target.closest('.slb'); if (!b) return;
+  const k = b.closest('.sl').dataset.sl; OPEN === k ? closePop() : openPop(k);
+});
+$('#slicers').addEventListener('change', e => {
+  const cb = e.target.closest('input[type=checkbox]'); if (!cb) return;
+  toggleEx(cb.closest('.sl').dataset.sl, dec(cb.dataset.val)); render();
+});
+$('#slicers').addEventListener('input', e => { if (e.target.classList.contains('ps')) popList(e.target.closest('.sl').dataset.sl); });
+document.addEventListener('click', e => { if (OPEN && !e.target.closest('.sl')) closePop(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
+$('#chips').onclick = e => { const c = e.target.closest('[data-clr]'); if (c) clearFilter(c.dataset.clr); };
+
+/* filtro cruzado: clicar em gráficos e tabelas */
+$('#app').addEventListener('click', e => {
+  if (e.target.closest('.fbar') || e.target.closest('th')) return;
+  const p = e.target.closest('[data-per]');
+  if (p) { PSEL.has(p.dataset.per) ? PSEL.delete(p.dataset.per) : PSEL.add(p.dataset.per); render(); return; }
+  const d = e.target.closest('[data-dim]');
+  if (d) { pick(d.dataset.dim, dec(d.dataset.val), e.ctrlKey || e.shiftKey || e.metaKey); render(); }
+});
+$('#tMot').addEventListener('click', e => {
+  const th = e.target.closest('th[data-k]'); if (!th) return;
+  SORT = {k: th.dataset.k, d: SORT.k === th.dataset.k ? -SORT.d : (th.dataset.k === 'mot' ? 1 : -1)}; tabMot(filtered(['mot']));
+});
+const stepDay = n => { const d = [...$('#dSel').options].map(o => o.value).reverse(), i = d.indexOf(DAY) + n; if (d[i]) { DAY = d[i]; monitor(filtered(['per'])); } };
+$('#dPrev').onclick = () => stepDay(-1); $('#dNext').onclick = () => stepDay(1);
+$('#dSel').onchange = e => { DAY = e.target.value; monitor(filtered(['per'])); };
+$('#bCsv').onclick = () => {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = ['pedido;cliente;ponto;entregador;status;recebido;prazo;atraso_h'].concat(EXC.map(r =>
+    [q(r.id), q(r.cli), q(r.ponto), q(r.mot), q(r.st), iso(r.rec), iso(r.prazo), Math.round((REF - r.prazo) / 36e5)].join(';'))).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], {type: 'text/csv'}));
+  a.download = `m1_excecoes_${dkey(new Date())}.csv`; a.click();
+};
+
+/* ---------- início: tenta carregar m1_dados.json da mesma pasta ---------- */
+fetch('m1_dados.json?t=' + Date.now()).then(r => r.ok ? r.json() : Promise.reject()).then(load).catch(() => { $('#empty').hidden = false; });
+</script>
+</body>
+</html>
